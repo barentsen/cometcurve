@@ -5,7 +5,7 @@ CometCurve
 
 *CometCurve* is an open source Python package which utilizes data from the
 `Comet Observation Database <https://www.cobs.si>`_ (COBS) to fit a canonical
-model to the light curves of comets.
+model to the light curves of comets in a probabilistic way using PyMC3.
 
 
 Example
