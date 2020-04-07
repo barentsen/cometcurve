@@ -1,6 +1,6 @@
 # Matplotlib style used by lightkurve
 figure.facecolor : white
-figure.dpi       : 200
+figure.dpi       : 100
 figure.figsize   : 8.485, 5
 
 image.cmap : viridis
