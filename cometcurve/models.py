@@ -58,7 +58,7 @@ class CometModel():
                                          n=mean_n,
                                          r=self.sun_distance_func(times))
 
-    def plot(self, title=None, show_year=False, min_elongation=20):
+    def plot(self, title=None, show_year=False, min_elongation=None):
         """Plot the model alongside the observations."""
         if title is None:
             title = f"Light curve of Comet {self.comet}"
@@ -74,13 +74,13 @@ class CometModel():
                               np.timedelta64(12, 'h'))
 
             # Show the observations
-            pl.scatter(self.obs[self.obs.visual].time,
-                       self.obs[self.obs.visual].magnitude,
-                       marker='+', lw=0.7, s=40, label="Visual observations",
+            pl.scatter(self.obs.data[self.obs.data.visual].time,
+                       self.obs.data[self.obs.data.visual].magnitude,
+                       marker='+', lw=0.7, s=40, label="Visual observations (COBS)",
                        c='#2980b9', alpha=0.8, zorder=50)
-            pl.scatter(self.obs[~self.obs.visual].time,
-                       self.obs[~self.obs.visual].magnitude,
-                       marker='x', lw=0.7, s=30, label="CCD observations",
+            pl.scatter(self.obs.data[~self.obs.data.visual].time,
+                       self.obs.data[~self.obs.data.visual].magnitude,
+                       marker='x', lw=0.7, s=30, label="CCD observations (COBS)",
                        c='#c0392b', alpha=0.8, zorder=50)
 
             # Show the model fit
@@ -129,20 +129,23 @@ class CometModel():
             pl.ylabel("Magnitude")
             pl.title(title)
             handles, labels = ax.get_legend_handles_labels()
-            pl.legend([handles[x] for x in (1, 2, 0, 3)],
-                      [labels[x] for x in (1, 2, 0, 3)])
+            try:
+                pl.legend([handles[x] for x in (1, 2, 0, 3)],
+                        [labels[x] for x in (1, 2, 0, 3)])
+            except IndexError:
+                pl.legend()
             pl.tight_layout()
         return ax
 
     def create_pymc_model(self, min_observations=0, observer_bias=False):
         """Returns a PyMC3 model."""
-        dfobs = self.obs[self.obs.observations > min_observations]
+        dfobs = self.obs.data[self.obs.data.observations > min_observations]
         
         with pm.Model() as model:
             delta = self.earth_distance_func(dfobs.time.values)
             r = self.sun_distance_func(dfobs.time.values)
-            n = pm.Normal('n', mu=3.9, sigma=1.0)  # activity parameter
-            h = pm.Normal('h', mu=5.6, sigma=2.6)  # absolute magnitude
+            n = pm.Normal('n', mu=3.49, sigma=1.36)  # activity parameter
+            h = pm.Normal('h', mu=6.66, sigma=1.98)  # absolute magnitude
             
             model_mag = comet_magnitude_power_law(h=h, n=n, delta=delta, r=r)
 
@@ -187,6 +190,34 @@ def fit_all_comets():
     result = []
     for comet in comets.itertuples():
         print(comet.comet)
+        model = CometModel(comet=comet.comet,
+                          cobs_id=comet.cobs_id,
+                          horizons_id=comet.horizons_id,
+                          start=comet.start,
+                          stop=comet.stop)
+        model.sample(draws=300)
+        ax = model.plot()
+        output_fn = f"output/{comet.cobs_id}.png"
+        print(f"Writing {output_fn}")
+        ax.figure.savefig(output_fn)
+        pl.close()
+        params = model.get_parameter_summary()
+        result.append(params)
+    df = pd.DataFrame(result)
+    print(f"Prior for n: mean={df.n_mean.mean():.2f}, std={df.n_mean.std():.2f}")
+    print(f"Prior for h: mean={df.h_mean.mean():.2f}, std={df.h_mean.std():.2f}")
+    print(f"Prior for beta: mean={df.beta_mean.mean():.2f}, std={df.beta_mean.std():.2f}")
+    return df
+
+
+def fit_all_comets2():
+    result = []
+    df = read_cobs()
+    comet_counts = df[df.date > '1990'].comet.value_counts()
+    well_observed_comets = comet_counts[comet_counts > 300].index
+    well_observed_mask = df.comet.isin(well_observed_comets)
+    for comet in well_observed_comets:
+        print(comet)
         model = CometModel(comet=comet.comet,
                           cobs_id=comet.cobs_id,
                           horizons_id=comet.horizons_id,

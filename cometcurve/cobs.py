@@ -1,4 +1,4 @@
-"""Tools for reading the Comet Observations Database (COBS)."""
+"""Module for interacting with the Comet Observations Database (COBS)."""
 import numpy as np
 import pandas as pd
 from astropy.time import Time
@@ -6,6 +6,7 @@ from astropy.time import Time
 from . import PACKAGEDIR, log
 
 
+# Column numbers of COBS/ICQ data fields
 COLUMNS = {
         'comet': (0, 11),
         'date': (11, 21),
@@ -21,9 +22,31 @@ COLUMNS = {
     }
 
 
+class CometObservations():
+    """Class to interact with the Comet Observation Database (COBS).
+    
+    Parameters
+    ----------
+    data : `pandas.DataFrame`
+        DataFrame returned by `read_cobs()`.
+    """
+    def __init__(self, data=None):
+        if data is None:
+            self.data = read_cobs()
+        else:
+            self.data = data
+
+    def get_observer_list(self):
+        """Returns a string listing all observer names.
+        
+        The names are sorted by number of observations.
+        """
+        return ", ".join(self.data.observer_name.value_counts().keys())
+
+
 def read_cobs(filename=None, comet=None, start=None, stop=None,
               allowed_methods=('S', 'B', 'M', 'I', 'E', 'Z', 'V', 'O'),):
-    """Returns a DataFrame containing the Comet Observations Database (COBS)."""
+    """Returns a `CometObservations` instance containing the COBS database."""
     # Default filename
     if filename is None:
         filename = [PACKAGEDIR / 'data/cobs-data-before-2020.txt',
@@ -79,4 +102,4 @@ def read_cobs(filename=None, comet=None, start=None, stop=None,
     df_counts.columns = ['observer', 'observations']
     df = pd.merge(df, df_counts, on="observer")
 
-    return df
+    return CometObservations(df)
