@@ -88,7 +88,13 @@ class CometModel():
             trace_h = self.trace.get_values('h')
             mean_h = np.nanmean(trace_h)
             mean_n = np.nanmean(trace_n)
-            for idx in range(0, len(trace_n), int(len(trace_n)/400)):
+
+            # Show the uncertainty based on 100 samples
+            if len(trace_n) < 100:
+                step = 1
+            else:
+                step = int(len(trace_n)/100)
+            for idx in range(0, len(trace_n), step):
                 model = comet_magnitude_power_law(h=trace_h[idx],
                                                   delta=self.earth_distance_func(times),
                                                   n=trace_n[idx],
