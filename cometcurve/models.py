@@ -58,8 +58,14 @@ class CometModel():
                                          n=mean_n,
                                          r=self.sun_distance_func(times))
 
-    def plot(self, title=None, show_year=False, min_elongation=None):
-        """Plot the model alongside the observations."""
+    def plot(self, title=None, show_year=False, min_elongation=None, n_samples=400):
+        """Plot the model alongside the observations.
+
+        Parameters
+        ----------
+        n_samples : int
+            Number of sample draws to show to visualize the uncertainty.
+        """
         if title is None:
             title = f"Light curve of Comet {self.comet}"
 
@@ -89,11 +95,11 @@ class CometModel():
             mean_h = np.nanmean(trace_h)
             mean_n = np.nanmean(trace_n)
 
-            # Show the uncertainty based on 100 samples
-            if len(trace_n) < 100:
+            # Show the uncertainty based on n_samples
+            if len(trace_n) < n_samples:
                 step = 1
             else:
-                step = int(len(trace_n)/100)
+                step = int(len(trace_n) / n_samples)
             for idx in range(0, len(trace_n), step):
                 model = comet_magnitude_power_law(h=trace_h[idx],
                                                   delta=self.earth_distance_func(times),
