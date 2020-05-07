@@ -6,3 +6,4 @@ pandas>=1.0.1
 pyarrow>=0.16.0
 appdirs>=1.4.3
 mechanize>=0.4.5
+pymc3
